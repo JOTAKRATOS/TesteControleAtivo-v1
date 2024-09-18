@@ -1,63 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Leitor de Código de Barras</title>
-  <!-- Incluindo a biblioteca ZXing -->
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner</title>
+    <script src="https://unpkg.com/@zxing/browser@latest"></script>
 </head>
 <body>
-  <h1>Leitor de Código de Barras</h1>
+    <h1>Barcode Scanner</h1>
+    <video id="video" width="300" height="200" style="border: 1px solid black;"></video>
+    <p id="result">Scan result: None</p>
+    <button id="startButton">Start Scanning</button>
 
-  <!-- Elemento de vídeo para acessar a câmera -->
-  <video id="video" width="300" height="200" style="border: 1px solid black"></video>
-  
-  <!-- Botão para iniciar a leitura -->
-  <button id="startButton">Iniciar Leitura</button>
-  
-  <!-- Elemento para mostrar o resultado da leitura -->
-  <p id="result">Resultado: Nenhum código detectado</p>
+    <script>
+        const videoElement = document.getElementById('video');
+        const resultElement = document.getElementById('result');
+        const startButton = document.getElementById('startButton');
+        let selectedDeviceId;
+        let codeReader = new ZXing.BrowserMultiFormatReader();
 
-  <script>
-    // Inicializa o leitor de código de barras
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    const videoElement = document.getElementById('video');
-    const resultElement = document.getElementById('result');
-    const startButton = document.getElementById('startButton');
-    
-    let activeDeviceId = null;
-
-    // Função para iniciar a leitura do código de barras automaticamente
-    function startBarcodeScanner() {
-      // Obtém os dispositivos de entrada de vídeo disponíveis (câmeras)
-      codeReader.listVideoInputDevices().then(videoInputDevices => {
-        // Tenta selecionar a câmera traseira com base no nome do dispositivo
-        const backCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira'));
-
-        activeDeviceId = backCamera ? backCamera.deviceId : videoInputDevices[0].deviceId;
-
-        // Inicia a leitura contínua do código de barras com a câmera selecionada
-        codeReader.decodeFromVideoDevice(activeDeviceId, 'video', (result, err) => {
-          if (result) {
-            // Exibe o resultado na página quando o código de barras é detectado
-            resultElement.textContent = `Resultado: ${result.text}`;
-            console.log(`Código detectado: ${result.text}`);
-          }
-          if (err && !(err instanceof ZXing.NotFoundException)) {
-            console.error(err);
-          }
+        startButton.addEventListener('click', () => {
+            startScanning();
         });
-      }).catch(err => console.error(err));
-    }
 
-    // Adiciona evento ao botão para iniciar a leitura quando clicado
-    startButton.addEventListener('click', () => {
-      startBarcodeScanner();
-      startButton.style.display = 'none';  // Oculta o botão após iniciar a leitura
-    });
+        function startScanning() {
+            codeReader.listVideoInputDevices().then((videoInputDevices) => {
+                // Seleciona a câmera traseira
+                selectedDeviceId = videoInputDevices[0].deviceId;
 
-  </script>
+                codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+                    if (result) {
+                        resultElement.textContent = `Scan result: ${result.text}`;
+                        console.log(result.text);
+                    }
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        console.error(err);
+                    }
+                });
+            }).catch((err) => {
+                console.error(err);
+            });
+        }
+    </script>
 </body>
 </html>
