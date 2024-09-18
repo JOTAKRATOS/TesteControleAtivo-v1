@@ -24,12 +24,13 @@ function importExcel(file) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(sheet);
         
-        // Extrai os números dos bens do Excel
-        bens = jsonData.map(item => item['Numero_Bem']);  // Verifique o nome correto da coluna no Excel
+        // Extrai os números dos bens do Excel, certifique-se de que 'Numero_Bem' seja o nome correto da coluna
+        bens = jsonData.map(item => item['Numero_Bem']);  
         alert('Lista de bens importada com sucesso!');
     };
     reader.readAsArrayBuffer(file);
 }
+
 
 function verificarCodigo(codigo) {
     const resultElement = document.getElementById('result');
