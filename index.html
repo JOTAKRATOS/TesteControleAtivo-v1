@@ -1,54 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditoria de Ativos - Câmera</title>
-    <style>
-        #video {
-            width: 100%;
-            height: auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Leitor de Código de Barras</title>
+  <!-- Incluindo a biblioteca ZXing -->
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body>
-    <h1>Auditoria de Ativos</h1>
-    <button onclick="startCamera()">Iniciar Câmera</button>
-    <video id="video" autoplay></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    <p id="barcodeResult"></p>
+  <h1>Leitor de Código de Barras</h1>
 
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
-    <script>
-        let video = document.getElementById('video');
-        let canvas = document.getElementById('canvas');
-        let barcodeResult = document.getElementById('barcodeResult');
-        let context = canvas.getContext('2d');
-        let barcodeReader = new ZXing.BrowserBarcodeReader();
+  <!-- Elemento de vídeo para acessar a câmera -->
+  <video id="video" width="300" height="200" style="border: 1px solid black"></video>
+  
+  <!-- Elemento para mostrar o resultado da leitura -->
+  <p id="result">Resultado: Nenhum código detectado</p>
 
-        function startCamera() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(stream => {
-                    video.srcObject = stream;
-                    video.play();
-                    scanBarcode();
-                })
-                .catch(err => {
-                    console.error("Erro ao acessar a câmera: ", err);
-                });
-        }
+  <!-- Botão para iniciar a leitura do código de barras -->
+  <button id="startButton">Iniciar Leitura</button>
 
-        function scanBarcode() {
-            barcodeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-                if (result) {
-                    barcodeResult.textContent = 'Código de Barras: ' + result.text;
-                    console.log(result);
-                }
-                if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.error(err);
-                }
-            });
-        }
-    </script>
+  <script>
+    // Inicializa o leitor de código de barras
+    const codeReader = new ZXing.BrowserBarcodeReader();
+    const videoElement = document.getElementById('video');
+    const resultElement = document.getElementById('result');
+    const startButton = document.getElementById('startButton');
+
+    startButton.addEventListener('click', () => {
+      // Obtém os dispositivos de entrada de vídeo disponíveis (câmeras)
+      codeReader.getVideoInputDevices().then(videoInputDevices => {
+        // Escolhe a primeira câmera disponível
+        const firstDeviceId = videoInputDevices[0].deviceId;
+        // Inicia a leitura do código de barras
+        codeReader.decodeOnceFromVideoDevice(firstDeviceId, 'video')
+          .then(result => {
+            // Exibe o resultado na página
+            resultElement.textContent = `Resultado: ${result.text}`;
+          })
+          .catch(err => console.error(err));
+      }).catch(err => console.error(err));
+    });
+  </script>
 </body>
 </html>
