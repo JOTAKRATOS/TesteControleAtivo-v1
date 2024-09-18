@@ -15,11 +15,17 @@
             font-size: 18px;
             font-weight: bold;
         }
+        #debug {
+            width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <h1>Leitura de Código de Barras</h1>
     <div id="scanner-container"></div>
+    <canvas id="debug"></canvas>
     <div id="output">Aguardando leitura...</div>
 
     <script>
@@ -30,42 +36,50 @@
                     type: "LiveStream",
                     target: document.querySelector('#scanner-container'),
                     constraints: {
-                        facingMode: "environment" // Usa a câmera traseira
+                        facingMode: "environment", // Usa a câmera traseira
+                        focusMode: "continuous",    // Modo de foco contínuo
+                        advanced: [{ zoom: 2 }]     // Aumenta o zoom para facilitar a detecção
                     }
                 },
                 decoder: {
                     readers: [
-                        "code_128_reader", // Inclui o Code 128
-                        "ean_reader",      // EAN
-                        "ean_8_reader",    // EAN-8
-                        "code_39_reader",  // Code 39
-                        "code_39_vin_reader", // Code 39 VIN
-                        "upc_reader",      // UPC
-                        "upc_e_reader",    // UPC-E
-                        "i2of5_reader",    // Interleaved 2 of 5
-                        "2of5_reader",     // Standard 2 of 5
-                        "code_93_reader"   // Code 93
+                        "code_128_reader", 
+                        "ean_reader",
+                        "ean_8_reader", 
+                        "code_39_reader", 
+                        "code_39_vin_reader", 
+                        "upc_reader", 
+                        "upc_e_reader", 
+                        "i2of5_reader", 
+                        "2of5_reader", 
+                        "code_93_reader"
                     ],
-                    multiple: false // Leitura de um código por vez
+                    multiple: false
                 },
-                locate: true, // Tenta localizar o código de barras na imagem
+                locate: true,
                 locator: {
                     halfSample: true,
-                    patchSize: "medium", // Tamanho da área de amostra (small, medium, large)
+                    patchSize: "large", // Aumenta a área de busca para melhorar a detecção em superfícies difíceis
                     debug: {
-                        showCanvas: false,
-                        showPatches: false,
-                        showFoundPatches: false,
-                        showSkeleton: false,
-                        showLabels: false,
-                        showPatchLabels: false,
-                        showRemainingPatchLabels: false,
+                        showCanvas: true,
+                        showPatches: true,
+                        showFoundPatches: true,
+                        showSkeleton: true,
+                        showLabels: true,
+                        showPatchLabels: true,
+                        showRemainingPatchLabels: true,
                         boxFromPatches: {
-                            showTransformed: false,
-                            showTransformedBox: false,
-                            showBB: false
+                            showTransformed: true,
+                            showTransformedBox: true,
+                            showBB: true
                         }
                     }
+                },
+                debug: {
+                    drawBoundingBox: true, // Desenha a caixa ao redor do código de barras detectado
+                    showCanvas: true,
+                    showPatches: true,
+                    showSkeleton: true
                 }
             }, function(err) {
                 if (err) {
@@ -81,6 +95,29 @@
                 const code = result.codeResult.code;
                 document.getElementById('output').innerHTML = `Código de Barras Detectado: ${code}`;
                 console.log("Código detectado:", code);
+            });
+
+            // Exibe debug visual na tela
+            Quagga.onProcessed(function(result) {
+                const drawingCanvas = Quagga.canvas.dom.overlay;
+                const drawingCtx = Quagga.canvas.ctx.overlay;
+
+                if (result) {
+                    if (result.boxes) {
+                        drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+                        result.boxes.filter(box => box !== result.box).forEach(function (box) {
+                            Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+                        });
+                    }
+                    
+                    if (result.box) {
+                        Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "blue", lineWidth: 2});
+                    }
+
+                    if (result.codeResult && result.codeResult.code) {
+                        document.getElementById('output').innerHTML = `Código detectado: ${result.codeResult.code}`;
+                    }
+                }
             });
         }
 
