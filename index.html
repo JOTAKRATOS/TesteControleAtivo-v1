@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoria de Ativos - Câmera</title>
+    <style>
+        #video {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Auditoria de Ativos</h1>
+    <button onclick="startCamera()">Iniciar Câmera</button>
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <p id="barcodeResult"></p>
+
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script>
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let barcodeResult = document.getElementById('barcodeResult');
+        let context = canvas.getContext('2d');
+        let barcodeReader = new ZXing.BrowserBarcodeReader();
+
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                    scanBarcode();
+                })
+                .catch(err => {
+                    console.error("Erro ao acessar a câmera: ", err);
+                });
+        }
+
+        function scanBarcode() {
+            barcodeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+                if (result) {
+                    barcodeResult.textContent = 'Código de Barras: ' + result.text;
+                    console.log(result);
+                }
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error(err);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
