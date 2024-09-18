@@ -22,35 +22,27 @@
             startScanning();
         });
 
-        function startScanning() {
-            // Inicializa o leitor de código de barras
-            codeReader.listVideoInputDevices().then((videoInputDevices) => {
-                // Procura por uma câmera traseira
-                let selectedDeviceId;
-                for (let device of videoInputDevices) {
-                    if (device.label.toLowerCase().includes('back')) {
-                        selectedDeviceId = device.deviceId;
-                        break;
-                    }
-                }
-                // Se não encontrar uma câmera traseira, usa a primeira disponível
-                if (!selectedDeviceId && videoInputDevices.length > 0) {
-                    selectedDeviceId = videoInputDevices[0].deviceId;
-                }
+        async function startScanning() {
+            try {
+                // Solicita permissão para usar a câmera e abre a câmera traseira
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                videoElement.srcObject = stream;
+                videoElement.play();
 
-                // Configura a câmera para começar a leitura
-                codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+                // Inicia a leitura do código de barras de forma contínua
+                codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
                     if (result) {
                         resultElement.textContent = `Scan result: ${result.text}`;
-                        console.log(result.text);
+                        console.log(result.text); // Mostra o resultado no console
                     }
                     if (err && !(err instanceof ZXing.NotFoundException)) {
-                        console.error(err);
+                        console.error(err); // Mostra outros erros no console
                     }
                 });
-            }).catch((err) => {
-                console.error(err);
-            });
+            } catch (err) {
+                console.error('Erro ao acessar a câmera: ', err);
+                resultElement.textContent = 'Erro ao acessar a câmera.';
+            }
         }
     </script>
 </body>
