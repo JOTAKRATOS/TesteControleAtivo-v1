@@ -17,30 +17,40 @@
   <!-- Elemento para mostrar o resultado da leitura -->
   <p id="result">Resultado: Nenhum código detectado</p>
 
-  <!-- Botão para iniciar a leitura do código de barras -->
-  <button id="startButton">Iniciar Leitura</button>
-
   <script>
     // Inicializa o leitor de código de barras
     const codeReader = new ZXing.BrowserBarcodeReader();
     const videoElement = document.getElementById('video');
     const resultElement = document.getElementById('result');
-    const startButton = document.getElementById('startButton');
 
-    startButton.addEventListener('click', () => {
+    // Função para iniciar a leitura do código de barras automaticamente
+    function startBarcodeScanner() {
       // Obtém os dispositivos de entrada de vídeo disponíveis (câmeras)
       codeReader.getVideoInputDevices().then(videoInputDevices => {
-        // Escolhe a primeira câmera disponível
-        const firstDeviceId = videoInputDevices[0].deviceId;
-        // Inicia a leitura do código de barras
-        codeReader.decodeOnceFromVideoDevice(firstDeviceId, 'video')
-          .then(result => {
-            // Exibe o resultado na página
-            resultElement.textContent = `Resultado: ${result.text}`;
-          })
-          .catch(err => console.error(err));
+        // Filtra para a câmera traseira (environment)
+        const backCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira') || device.kind === 'videoinput');
+        
+        if (backCamera) {
+          // Inicia a leitura do código de barras com a câmera traseira
+          codeReader.decodeFromVideoDevice(backCamera.deviceId, 'video', (result, err) => {
+            if (result) {
+              // Exibe o resultado na página quando o código de barras é detectado
+              resultElement.textContent = `Resultado: ${result.text}`;
+              console.log(`Código detectado: ${result.text}`);
+            }
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+              console.error(err);
+            }
+          });
+        } else {
+          console.error('Câmera traseira não encontrada.');
+          resultElement.textContent = 'Câmera traseira não encontrada.';
+        }
       }).catch(err => console.error(err));
-    });
+    }
+
+    // Chama a função para iniciar a leitura assim que a página carrega
+    window.addEventListener('load', startBarcodeScanner);
   </script>
 </body>
 </html>
