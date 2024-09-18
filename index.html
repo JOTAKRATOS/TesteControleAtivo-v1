@@ -9,39 +9,35 @@
 </head>
 <body>
     <h1>Leitor de Código de Barras</h1>
-    
-    <input type="file" id="inputExcel" />
+
+    <input type="file" id="inputExcel" accept=".xlsx, .xls" />
     <button onclick="startScanner()">Iniciar Leitura</button>
-    
+
     <div>
         <h3>Código de barras lido:</h3>
         <p id="codigo-lido">Nenhum código lido ainda</p>
     </div>
-    
+
     <div>
         <h3>Resultado:</h3>
         <p id="result">Aguardando leitura...</p>
     </div>
-    
-    <div>
-        <h3>Status:</h3>
-        <p id="status">Aguardando leitura...</p>
-    </div>
-    
+
     <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
-    
+
     <script>
         let selectedDeviceId;
         let codeReader;
         let bens = []; // Lista de bens importados
         let pendencias = []; // Lista de pendências
 
-        // Função para iniciar a leitura do código de barras
+        // Função para iniciar a leitura do código de barras com a câmera traseira
         function startScanner() {
             codeReader = new ZXing.BrowserMultiFormatReader();
             codeReader.getVideoInputDevices()
                 .then((videoInputDevices) => {
-                    selectedDeviceId = videoInputDevices[0].deviceId; // Pegando a câmera traseira
+                    // Selecionar a câmera traseira
+                    selectedDeviceId = videoInputDevices.length > 1 ? videoInputDevices[1].deviceId : videoInputDevices[0].deviceId;
                     return codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
                         if (result) {
                             const codigoLido = result.text;
@@ -61,16 +57,13 @@
         // Função para verificar se o código lido está na lista de bens
         function verificarCodigo(codigo) {
             const resultElement = document.getElementById('result');
-            const statusElement = document.getElementById('status');
             
             if (bens.includes(codigo)) {
-                resultElement.textContent = `Bem ${codigo} OK`;
-                statusElement.textContent = `Bem ${codigo} localizado`;
-                const index = bens.indexOf(codigo);
-                bens.splice(index, 1);  // Remove o bem da lista de bens localizados
+                resultElement.textContent = `Bem ${codigo} OK. Localizado.`;
+                // Remove o bem localizado da lista de bens
+                bens = bens.filter(bem => bem !== codigo);
             } else {
-                resultElement.textContent = `Bem ${codigo} não localizado`;
-                statusElement.textContent = `Bem ${codigo} adicionado à lista de pendências`;
+                resultElement.textContent = `Bem ${codigo} não localizado. Adicionado à lista de pendências.`;
                 pendencias.push(codigo);  // Adiciona o bem à lista de pendências
             }
         }
@@ -92,7 +85,7 @@
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(sheet);
                 
-                // Extrai os números dos bens do Excel, certifique-se de que 'Numero_Bem' seja o nome correto da coluna
+                // Extrai os números dos bens do Excel
                 bens = jsonData.map(item => item['Numero_Bem']);
                 alert('Lista de bens importada com sucesso!');
             };
