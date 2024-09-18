@@ -3,94 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitor de Código de Barras</title>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <title>Barcode Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <style>
+        video {
+            width: 100%;
+            height: auto;
+        }
+        #output {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
-    <h1>Leitor de Código de Barras</h1>
-
-    <input type="file" id="inputExcel" accept=".xlsx, .xls" />
-    <button onclick="startScanner()">Iniciar Leitura</button>
-
-    <div>
-        <h3>Código de barras lido:</h3>
-        <p id="codigo-lido">Nenhum código lido ainda</p>
+    <h1>Leitura de Código de Barras</h1>
+    <div id="scanner-container" style="position: relative; width: 100%; height: auto;">
+        <canvas id="debug"></canvas>
     </div>
-
-    <div>
-        <h3>Resultado:</h3>
-        <p id="result">Aguardando leitura...</p>
-    </div>
-
-    <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
+    <div id="output">Aguardando leitura...</div>
 
     <script>
-        let selectedDeviceId;
-        let codeReader;
-        let bens = []; // Lista de bens importados
-        let pendencias = []; // Lista de pendências
-
-        // Função para iniciar a leitura do código de barras com a câmera traseira
         function startScanner() {
-            codeReader = new ZXing.BrowserMultiFormatReader();
-            codeReader.getVideoInputDevices()
-                .then((videoInputDevices) => {
-                    // Selecionar a câmera traseira
-                    selectedDeviceId = videoInputDevices.length > 1 ? videoInputDevices[1].deviceId : videoInputDevices[0].deviceId;
-                    return codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-                        if (result) {
-                            const codigoLido = result.text;
-                            document.getElementById('codigo-lido').textContent = `Código lido: ${codigoLido}`;
-                            verificarCodigo(codigoLido);
-                        }
-                        if (err && !(err instanceof ZXing.NotFoundException)) {
-                            console.error(err);
-                        }
-                    });
-                })
-                .catch((err) => {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner-container'),
+                    constraints: {
+                        facingMode: "environment", // Usa a câmera traseira
+                        focusMode: "continuous",
+                        zoom: 2
+                    }
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader",
+                        "2of5_reader",
+                        "code_93_reader"
+                    ]
+                },
+                locate: true,
+                locator: {
+                    patchSize: "large", // Amplia a área de busca para códigos de barras maiores
+                    halfSample: true
+                },
+                debug: {
+                    drawBoundingBox: true,
+                    showCanvas: true,
+                    showPatches: true,
+                    showSkeleton: true
+                }
+            }, function(err) {
+                if (err) {
                     console.error(err);
-                });
+                    return;
+                }
+                console.log("Scanner iniciado");
+                Quagga.start();
+            });
+
+            // Exibe os resultados do scanner em tempo real
+            Quagga.onProcessed(function(result) {
+                const drawingCanvas = Quagga.canvas.dom.overlay;
+                const drawingCtx = Quagga.canvas.ctx.overlay;
+
+                if (result) {
+                    if (result.boxes) {
+                        drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+                        result.boxes.forEach(function(box) {
+                            Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+                        });
+                    }
+                    
+                    if (result.box) {
+                        Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "blue", lineWidth: 2});
+                    }
+                }
+            });
+
+            // Exibe o resultado quando o código for detectado
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                document.getElementById('output').innerHTML = `Código de Barras Detectado: ${code}`;
+                console.log("Código detectado:", code);
+            });
         }
 
-        // Função para verificar se o código lido está na lista de bens
-        function verificarCodigo(codigo) {
-            const resultElement = document.getElementById('result');
-            
-            if (bens.includes(codigo)) {
-                resultElement.textContent = `Bem ${codigo} OK. Localizado.`;
-                // Remove o bem localizado da lista de bens
-                bens = bens.filter(bem => bem !== codigo);
-            } else {
-                resultElement.textContent = `Bem ${codigo} não localizado. Adicionado à lista de pendências.`;
-                pendencias.push(codigo);  // Adiciona o bem à lista de pendências
-            }
-        }
-
-        // Função para importar a planilha de bens em Excel
-        document.getElementById('inputExcel').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                importExcel(file);
-            }
-        });
-
-        // Função para ler o arquivo Excel e carregar a lista de bens
-        function importExcel(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(sheet);
-                
-                // Extrai os números dos bens do Excel
-                bens = jsonData.map(item => item['Numero_Bem']);
-                alert('Lista de bens importada com sucesso!');
-            };
-            reader.readAsArrayBuffer(file);
-        }
+        startScanner(); // Inicia o scanner
     </script>
 </body>
 </html>
