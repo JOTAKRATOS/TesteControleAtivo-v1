@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner</title>
+    <title>Leitura de Código de Barras</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <style>
         video {
             width: 100%;
@@ -22,16 +23,54 @@
             width: 100%;
             height: auto;
         }
+        .file-upload {
+            margin: 20px 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <h1>Leitura de Código de Barras</h1>
-    <div id="scanner-container" style="position: relative; width: 100%; height: auto;">
-        <canvas id="debug"></canvas>
+    <div class="container">
+        <h1>Leitura de Código de Barras</h1>
+        <div class="file-upload">
+            <label for="fileInput" class="btn">Importar Lista de Bens (Excel)</label>
+            <input type="file" id="fileInput" accept=".xlsx, .xls">
+        </div>
+        <div id="scanner-container" style="position: relative; width: 100%; height: auto;">
+            <canvas id="debug"></canvas>
+        </div>
+        <div id="output">Aguardando leitura...</div>
     </div>
-    <div id="output">Aguardando leitura...</div>
 
     <script>
+        let listaBens = [];  // Array que armazena os bens importados
+        let pendencias = [];  // Lista para armazenar os bens não localizados
+
+        // Função para importar a lista de bens de um arquivo Excel
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet);
+                    
+                    // Extrair os números dos bens da planilha
+                    listaBens = jsonData.map(item => item['Numero_Bem']);
+                    alert('Lista de bens importada com sucesso!');
+                    console.log("Lista de Bens:", listaBens);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
         function startScanner() {
             Quagga.init({
                 inputStream: {
@@ -102,7 +141,23 @@
                 const code = result.codeResult.code;
                 document.getElementById('output').innerHTML = `Código de Barras Detectado: ${code}`;
                 console.log("Código detectado:", code);
+
+                // Verifica se o código detectado está na lista de bens
+                verificarCodigo(code);
             });
+        }
+
+        // Função para verificar o código de barras na lista de bens
+        function verificarCodigo(codigo) {
+            const resultElement = document.getElementById('output');
+            
+            if (listaBens.includes(codigo)) {
+                resultElement.textContent = `Bem ${codigo} OK. Localizado.`;
+                listaBens = listaBens.filter(bem => bem !== codigo); // Remove o bem da lista
+            } else {
+                resultElement.textContent = `Bem ${codigo} não localizado. Adicionado à lista de pendências.`;
+                pendencias.push(codigo);  // Adiciona o bem à lista de pendências
+            }
         }
 
         startScanner(); // Inicia o scanner
