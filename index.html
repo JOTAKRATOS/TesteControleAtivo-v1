@@ -15,17 +15,20 @@
             font-size: 18px;
             font-weight: bold;
         }
-        #debug {
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: auto;
-            margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <h1>Leitura de Código de Barras</h1>
-    <div id="scanner-container"></div>
-    <canvas id="debug"></canvas>
+    <div id="scanner-container" style="position: relative; width: 100%; height: auto;">
+        <canvas id="debug"></canvas>
+    </div>
     <div id="output">Aguardando leitura...</div>
 
     <script>
@@ -37,67 +40,45 @@
                     target: document.querySelector('#scanner-container'),
                     constraints: {
                         facingMode: "environment", // Usa a câmera traseira
-                        focusMode: "continuous",    // Modo de foco contínuo
-                        advanced: [{ zoom: 2 }]     // Aumenta o zoom para facilitar a detecção
+                        focusMode: "continuous",
+                        zoom: 2
                     }
                 },
                 decoder: {
                     readers: [
-                        "code_128_reader", 
+                        "code_128_reader",
                         "ean_reader",
-                        "ean_8_reader", 
-                        "code_39_reader", 
-                        "code_39_vin_reader", 
-                        "upc_reader", 
-                        "upc_e_reader", 
-                        "i2of5_reader", 
-                        "2of5_reader", 
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader",
+                        "2of5_reader",
                         "code_93_reader"
-                    ],
-                    multiple: false
+                    ]
                 },
                 locate: true,
                 locator: {
-                    halfSample: true,
-                    patchSize: "large", // Aumenta a área de busca para melhorar a detecção em superfícies difíceis
-                    debug: {
-                        showCanvas: true,
-                        showPatches: true,
-                        showFoundPatches: true,
-                        showSkeleton: true,
-                        showLabels: true,
-                        showPatchLabels: true,
-                        showRemainingPatchLabels: true,
-                        boxFromPatches: {
-                            showTransformed: true,
-                            showTransformedBox: true,
-                            showBB: true
-                        }
-                    }
+                    patchSize: "large", // Amplia a área de busca para códigos de barras maiores
+                    halfSample: true
                 },
                 debug: {
-                    drawBoundingBox: true, // Desenha a caixa ao redor do código de barras detectado
+                    drawBoundingBox: true,
                     showCanvas: true,
                     showPatches: true,
                     showSkeleton: true
                 }
             }, function(err) {
                 if (err) {
-                    console.log(err);
+                    console.error(err);
                     return;
                 }
                 console.log("Scanner iniciado");
                 Quagga.start();
             });
 
-            // Evento de leitura bem-sucedida
-            Quagga.onDetected(function(result) {
-                const code = result.codeResult.code;
-                document.getElementById('output').innerHTML = `Código de Barras Detectado: ${code}`;
-                console.log("Código detectado:", code);
-            });
-
-            // Exibe debug visual na tela
+            // Exibe os resultados do scanner em tempo real
             Quagga.onProcessed(function(result) {
                 const drawingCanvas = Quagga.canvas.dom.overlay;
                 const drawingCtx = Quagga.canvas.ctx.overlay;
@@ -105,7 +86,7 @@
                 if (result) {
                     if (result.boxes) {
                         drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-                        result.boxes.filter(box => box !== result.box).forEach(function (box) {
+                        result.boxes.forEach(function(box) {
                             Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
                         });
                     }
@@ -113,11 +94,14 @@
                     if (result.box) {
                         Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "blue", lineWidth: 2});
                     }
-
-                    if (result.codeResult && result.codeResult.code) {
-                        document.getElementById('output').innerHTML = `Código detectado: ${result.codeResult.code}`;
-                    }
                 }
+            });
+
+            // Exibe o resultado quando o código for detectado
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                document.getElementById('output').innerHTML = `Código de Barras Detectado: ${code}`;
+                console.log("Código detectado:", code);
             });
         }
 
