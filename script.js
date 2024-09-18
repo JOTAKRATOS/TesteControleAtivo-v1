@@ -31,7 +31,6 @@ function importExcel(file) {
     reader.readAsArrayBuffer(file);
 }
 
-// Função para verificar o código de barras lido
 function verificarCodigo(codigo) {
     const resultElement = document.getElementById('result');
     const statusElement = document.getElementById('status');
@@ -40,11 +39,11 @@ function verificarCodigo(codigo) {
         resultElement.textContent = `Bem ${codigo} OK`;
         statusElement.textContent = `Bem ${codigo} localizado`;
         const index = bens.indexOf(codigo);
-        bens.splice(index, 1);
+        bens.splice(index, 1);  // Remove o bem da lista de bens localizados
     } else {
         resultElement.textContent = `Bem ${codigo} não localizado`;
         statusElement.textContent = `Bem ${codigo} adicionado à lista de pendências`;
-        pendencias.push(codigo);
+        pendencias.push(codigo);  // Adiciona o bem à lista de pendências
     }
 }
 
