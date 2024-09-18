@@ -16,7 +16,6 @@
         const videoElement = document.getElementById('video');
         const resultElement = document.getElementById('result');
         const startButton = document.getElementById('startButton');
-        let selectedDeviceId;
         let codeReader = new ZXing.BrowserMultiFormatReader();
 
         startButton.addEventListener('click', () => {
@@ -24,10 +23,22 @@
         });
 
         function startScanning() {
+            // Inicializa o leitor de código de barras
             codeReader.listVideoInputDevices().then((videoInputDevices) => {
-                // Seleciona a câmera traseira
-                selectedDeviceId = videoInputDevices[0].deviceId;
+                // Procura por uma câmera traseira
+                let selectedDeviceId;
+                for (let device of videoInputDevices) {
+                    if (device.label.toLowerCase().includes('back')) {
+                        selectedDeviceId = device.deviceId;
+                        break;
+                    }
+                }
+                // Se não encontrar uma câmera traseira, usa a primeira disponível
+                if (!selectedDeviceId && videoInputDevices.length > 0) {
+                    selectedDeviceId = videoInputDevices[0].deviceId;
+                }
 
+                // Configura a câmera para começar a leitura
                 codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
                     if (result) {
                         resultElement.textContent = `Scan result: ${result.text}`;
