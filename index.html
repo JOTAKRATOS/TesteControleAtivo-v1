@@ -3,47 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner</title>
-    <script src="https://unpkg.com/@zxing/browser@latest"></script>
+    <title>Test Camera Access</title>
 </head>
 <body>
-    <h1>Barcode Scanner</h1>
+    <h1>Test Camera Access</h1>
     <video id="video" width="300" height="200" style="border: 1px solid black;"></video>
-    <p id="result">Scan result: None</p>
-    <button id="startButton">Start Scanning</button>
+    <p id="status">Camera status: Not started</p>
+    <button id="startButton">Start Camera</button>
 
     <script>
         const videoElement = document.getElementById('video');
-        const resultElement = document.getElementById('result');
+        const statusElement = document.getElementById('status');
         const startButton = document.getElementById('startButton');
-        let codeReader = new ZXing.BrowserMultiFormatReader();
 
-        startButton.addEventListener('click', () => {
-            startScanning();
-        });
-
-        async function startScanning() {
+        startButton.addEventListener('click', async () => {
             try {
-                // Solicita permissão para usar a câmera e abre a câmera traseira
+                // Tentando acessar a câmera traseira
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 videoElement.srcObject = stream;
                 videoElement.play();
-
-                // Inicia a leitura do código de barras de forma contínua
-                codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-                    if (result) {
-                        resultElement.textContent = `Scan result: ${result.text}`;
-                        console.log(result.text); // Mostra o resultado no console
-                    }
-                    if (err && !(err instanceof ZXing.NotFoundException)) {
-                        console.error(err); // Mostra outros erros no console
-                    }
-                });
+                statusElement.textContent = 'Camera status: Camera started successfully';
             } catch (err) {
                 console.error('Erro ao acessar a câmera: ', err);
-                resultElement.textContent = 'Erro ao acessar a câmera.';
+                statusElement.textContent = 'Erro ao acessar a câmera.';
             }
-        }
+        });
     </script>
 </body>
 </html>
