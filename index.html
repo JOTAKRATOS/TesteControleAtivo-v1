@@ -4,60 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barcode Scanner</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <style>
+        video {
+            width: 100%;
+            height: auto;
+        }
+        #output {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Barcode Scanner</h1>
-    <video id="video" width="300" height="200" style="border: 1px solid black;"></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-    <p id="status">Camera status: Not started</p>
-    <p id="barcodeResult">Barcode result: </p>
-    <button id="startButton">Start Camera</button>
+    <h1>Leitura de Código de Barras</h1>
+    <div id="scanner-container"></div>
+    <div id="output"></div>
 
     <script>
-        const videoElement = document.getElementById('video');
-        const canvasElement = document.getElementById('canvas');
-        const statusElement = document.getElementById('status');
-        const barcodeResultElement = document.getElementById('barcodeResult');
-        const startButton = document.getElementById('startButton');
-
-        let barcodeFound = false;
-
-        startButton.addEventListener('click', async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                videoElement.srcObject = stream;
-                videoElement.play();
-                statusElement.textContent = 'Camera status: Camera started successfully';
-                scanBarcode();
-            } catch (err) {
-                console.error('Erro ao acessar a câmera: ', err);
-                statusElement.textContent = 'Erro ao acessar a câmera.';
-            }
-        });
-
-        function scanBarcode() {
-            const canvasContext = canvasElement.getContext('2d');
-            canvasElement.width = videoElement.videoWidth;
-            canvasElement.height = videoElement.videoHeight;
-
-            function tick() {
-                if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-                    canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-                    const imageData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                    const code = jsQR(imageData.data, canvasElement.width, canvasElement.height);
-
-                    if (code && !barcodeFound) {
-                        barcodeFound = true;
-                        barcodeResultElement.textContent = `Barcode result: ${code.data}`;
-                        console.log('Barcode found: ', code.data);
-                    } else {
-                        requestAnimationFrame(tick);
+        // Configuração do QuaggaJS para usar a câmera traseira
+        function startScanner() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner-container'), // Elemento onde o vídeo será exibido
+                    constraints: {
+                        facingMode: "environment" // Usa a câmera traseira
                     }
+                },
+                decoder: {
+                    readers: ["code_128_reader", "ean_reader"] // Tipos de código de barras suportados
                 }
-            }
-            requestAnimationFrame(tick);
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                console.log("Scanner iniciado");
+                Quagga.start();
+            });
+
+            // Evento de leitura bem-sucedida
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                document.getElementById('output').innerHTML = `Código de Barras Detectado: ${code}`;
+                console.log("Código detectado:", code);
+            });
         }
+
+        startScanner(); // Inicia o scanner
     </script>
 </body>
 </html>
