@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitura de Código de Barras</title>
+    <title>Barcode Scanner</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <style>
@@ -23,7 +23,7 @@
             width: 100%;
             height: auto;
         }
-        .file-upload {
+        .file-upload, .export-buttons {
             margin: 20px 0;
         }
         .container {
@@ -45,11 +45,17 @@
             <canvas id="debug"></canvas>
         </div>
         <div id="output">Aguardando leitura...</div>
+
+        <div class="export-buttons">
+            <button onclick="exportarLista('localizados')">Exportar Bens Localizados</button>
+            <button onclick="exportarLista('pendencias')">Exportar Bens Não Localizados</button>
+        </div>
     </div>
 
     <script>
         let listaBens = [];  // Array que armazena os bens importados
-        let pendencias = [];  // Lista para armazenar os bens não localizados
+        let bensLocalizados = [];  // Lista para armazenar bens localizados
+        let pendencias = [];  // Lista para armazenar bens não localizados
 
         // Função para importar a lista de bens de um arquivo Excel
         document.getElementById('fileInput').addEventListener('change', function(event) {
@@ -153,11 +159,29 @@
             
             if (listaBens.includes(codigo)) {
                 resultElement.textContent = `Bem ${codigo} OK. Localizado.`;
+                bensLocalizados.push(codigo); // Adiciona à lista de bens localizados
                 listaBens = listaBens.filter(bem => bem !== codigo); // Remove o bem da lista
             } else {
                 resultElement.textContent = `Bem ${codigo} não localizado. Adicionado à lista de pendências.`;
                 pendencias.push(codigo);  // Adiciona o bem à lista de pendências
             }
+        }
+
+        // Função para exportar as listas de bens encontrados ou não localizados
+        function exportarLista(tipo) {
+            let dados = [];
+            if (tipo === 'localizados') {
+                dados = bensLocalizados.map(bem => ({ Numero_Bem: bem }));
+            } else if (tipo === 'pendencias') {
+                dados = pendencias.map(bem => ({ Numero_Bem: bem }));
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(dados);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, tipo === 'localizados' ? 'Bens Localizados' : 'Pendências');
+
+            // Gera o arquivo Excel e faz o download
+            XLSX.writeFile(workbook, `${tipo === 'localizados' ? 'bens_localizados' : 'pendencias'}.xlsx`);
         }
 
         startScanner(); // Inicia o scanner
