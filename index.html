@@ -14,6 +14,9 @@
   <!-- Elemento de vídeo para acessar a câmera -->
   <video id="video" width="300" height="200" style="border: 1px solid black"></video>
   
+  <!-- Botão para iniciar a leitura -->
+  <button id="startButton">Iniciar Leitura</button>
+  
   <!-- Elemento para mostrar o resultado da leitura -->
   <p id="result">Resultado: Nenhum código detectado</p>
 
@@ -22,6 +25,9 @@
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const videoElement = document.getElementById('video');
     const resultElement = document.getElementById('result');
+    const startButton = document.getElementById('startButton');
+    
+    let activeDeviceId = null;
 
     // Função para iniciar a leitura do código de barras automaticamente
     function startBarcodeScanner() {
@@ -30,10 +36,10 @@
         // Tenta selecionar a câmera traseira com base no nome do dispositivo
         const backCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('traseira'));
 
-        const selectedDeviceId = backCamera ? backCamera.deviceId : videoInputDevices[0].deviceId;
+        activeDeviceId = backCamera ? backCamera.deviceId : videoInputDevices[0].deviceId;
 
-        // Inicia a leitura do código de barras com a câmera selecionada
-        codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+        // Inicia a leitura contínua do código de barras com a câmera selecionada
+        codeReader.decodeFromVideoDevice(activeDeviceId, 'video', (result, err) => {
           if (result) {
             // Exibe o resultado na página quando o código de barras é detectado
             resultElement.textContent = `Resultado: ${result.text}`;
@@ -46,8 +52,12 @@
       }).catch(err => console.error(err));
     }
 
-    // Chama a função para iniciar a leitura assim que a página carrega
-    window.addEventListener('load', startBarcodeScanner);
+    // Adiciona evento ao botão para iniciar a leitura quando clicado
+    startButton.addEventListener('click', () => {
+      startBarcodeScanner();
+      startButton.style.display = 'none';  // Oculta o botão após iniciar a leitura
+    });
+
   </script>
 </body>
 </html>
