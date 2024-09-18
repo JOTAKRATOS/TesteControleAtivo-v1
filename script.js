@@ -48,6 +48,26 @@ function verificarCodigo(codigo) {
     }
 }
 
+// Função para desenhar os quadrados ao redor do código de barras
+function desenharQuadrados(localization, canvas, context) {
+    context.clearRect(0, 0, canvas.width, canvas.height);  // Limpar o canvas antes de desenhar
+    context.strokeStyle = "green";
+    context.lineWidth = 4;
+
+    localization.forEach(pos => {
+        const points = pos.cornerPoints;
+        context.beginPath();
+        context.moveTo(points[0].x, points[0].y);
+        points.forEach((point, index) => {
+            if (index > 0) {
+                context.lineTo(point.x, point.y);
+            }
+        });
+        context.closePath();
+        context.stroke();
+    });
+}
+
 // Função para iniciar o escaneamento de código de barras
 function scanBarcode() {
     const video = document.getElementById('video');
@@ -58,9 +78,10 @@ function scanBarcode() {
     function scan() {
         if (scanning) {
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+            codeReader.decodeFromVideoDevice(undefined, 'video', (result, err, controls) => {
                 if (result) {
                     verificarCodigo(result.text);  // Código lido com sucesso
+                    desenharQuadrados(result.barcodeResult.localizationResult, canvas, context);  // Desenha quadrados ao redor do código de barras
                 }
                 if (err && !(err instanceof ZXing.NotFoundException)) {
                     console.error(err);  // Exibe outros erros, se houver
