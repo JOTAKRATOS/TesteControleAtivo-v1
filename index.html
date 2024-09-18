@@ -12,28 +12,60 @@
         }
         #output {
             margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <h1>Leitura de Código de Barras</h1>
     <div id="scanner-container"></div>
-    <div id="output"></div>
+    <div id="output">Aguardando leitura...</div>
 
     <script>
-        // Configuração do QuaggaJS para usar a câmera traseira
         function startScanner() {
             Quagga.init({
                 inputStream: {
                     name: "Live",
                     type: "LiveStream",
-                    target: document.querySelector('#scanner-container'), // Elemento onde o vídeo será exibido
+                    target: document.querySelector('#scanner-container'),
                     constraints: {
                         facingMode: "environment" // Usa a câmera traseira
                     }
                 },
                 decoder: {
-                    readers: ["code_128_reader", "ean_reader"] // Tipos de código de barras suportados
+                    readers: [
+                        "code_128_reader", // Inclui o Code 128
+                        "ean_reader",      // EAN
+                        "ean_8_reader",    // EAN-8
+                        "code_39_reader",  // Code 39
+                        "code_39_vin_reader", // Code 39 VIN
+                        "upc_reader",      // UPC
+                        "upc_e_reader",    // UPC-E
+                        "i2of5_reader",    // Interleaved 2 of 5
+                        "2of5_reader",     // Standard 2 of 5
+                        "code_93_reader"   // Code 93
+                    ],
+                    multiple: false // Leitura de um código por vez
+                },
+                locate: true, // Tenta localizar o código de barras na imagem
+                locator: {
+                    halfSample: true,
+                    patchSize: "medium", // Tamanho da área de amostra (small, medium, large)
+                    debug: {
+                        showCanvas: false,
+                        showPatches: false,
+                        showFoundPatches: false,
+                        showSkeleton: false,
+                        showLabels: false,
+                        showPatchLabels: false,
+                        showRemainingPatchLabels: false,
+                        boxFromPatches: {
+                            showTransformed: false,
+                            showTransformedBox: false,
+                            showBB: false
+                        }
+                    }
                 }
             }, function(err) {
                 if (err) {
