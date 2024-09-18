@@ -3,31 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Camera Access</title>
+    <title>Barcode Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
-    <h1>Test Camera Access</h1>
+    <h1>Barcode Scanner</h1>
     <video id="video" width="300" height="200" style="border: 1px solid black;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
     <p id="status">Camera status: Not started</p>
+    <p id="barcodeResult">Barcode result: </p>
     <button id="startButton">Start Camera</button>
 
     <script>
         const videoElement = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
         const statusElement = document.getElementById('status');
+        const barcodeResultElement = document.getElementById('barcodeResult');
         const startButton = document.getElementById('startButton');
+
+        let barcodeFound = false;
 
         startButton.addEventListener('click', async () => {
             try {
-                // Tentando acessar a câmera traseira
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 videoElement.srcObject = stream;
                 videoElement.play();
                 statusElement.textContent = 'Camera status: Camera started successfully';
+                scanBarcode();
             } catch (err) {
                 console.error('Erro ao acessar a câmera: ', err);
                 statusElement.textContent = 'Erro ao acessar a câmera.';
             }
         });
+
+        function scanBarcode() {
+            const canvasContext = canvasElement.getContext('2d');
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+
+            function tick() {
+                if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+                    canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+                    const imageData = canvasContext.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                    const code = jsQR(imageData.data, canvasElement.width, canvasElement.height);
+
+                    if (code && !barcodeFound) {
+                        barcodeFound = true;
+                        barcodeResultElement.textContent = `Barcode result: ${code.data}`;
+                        console.log('Barcode found: ', code.data);
+                    } else {
+                        requestAnimationFrame(tick);
+                    }
+                }
+            }
+            requestAnimationFrame(tick);
+        }
     </script>
 </body>
 </html>
